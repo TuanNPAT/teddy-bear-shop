@@ -32,13 +32,22 @@ public class SecurityConfig {
             "/v3/api-docs/**"
     };
 
+    // API Product public (không cần auth)
+    private static final String[] PUBLIC_PRODUCT_ENDPOINTS = {
+            "/api/v1/products",           // GET - Lấy danh sách sản phẩm
+            "/api/v1/products/{productId}" // GET - Lấy chi tiết sản phẩm
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(request -> request
+                        // Public endpoints
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        // Public GET endpoints cho Product
+                        .requestMatchers(HttpMethod.GET, PUBLIC_PRODUCT_ENDPOINTS).permitAll()
+                        // Các API còn lại cần authentication
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwtConfigurer -> jwtConfigurer

@@ -31,5 +31,7 @@ public class ProductResponse {
 
     private ProductStatus status;
 
+    private Integer stock;
+
     private LocalDateTime createdAt;
 }

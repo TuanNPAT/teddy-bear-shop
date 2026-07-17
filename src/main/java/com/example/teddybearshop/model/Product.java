@@ -55,6 +55,10 @@ public class Product {
     @Builder.Default
     private ProductStatus status = ProductStatus.ACTIVE;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer stock = 0;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -63,4 +67,13 @@ public class Product {
     private LocalDateTime updatedAt;
 
     private LocalDateTime deletedAt;
+
+    @Column(length = 50)
+    private String deletedBy;
+
+    @Column(length = 50, updatable = false)
+    private String createdBy;
+
+    @Column(length = 50)
+    private String updatedBy;
 }
