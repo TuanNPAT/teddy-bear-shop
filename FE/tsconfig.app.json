@@ -24,6 +24,7 @@
 
     /* Cấu hình Path Alias cho shadcn/ui */
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": [
         "./src/*"
