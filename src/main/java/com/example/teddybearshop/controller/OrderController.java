@@ -1,6 +1,7 @@
 package com.example.teddybearshop.controller;
 
 import com.example.teddybearshop.common.response.ApiResponse;
+import com.example.teddybearshop.dto.request.OrderFilterRequest;
 import com.example.teddybearshop.dto.request.OrderRequest;
 import com.example.teddybearshop.dto.response.OrderResponse;
 import com.example.teddybearshop.enums.OrderStatus;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,19 +39,21 @@ public class OrderController {
                 .build();
     }
 
-    @GetMapping("/code/{orderCode}")
-    @Operation(summary = "Lấy chi tiết đơn hàng theo mã")
-    public ApiResponse<OrderResponse> getOrderByCode(@PathVariable String orderCode) {
-        return ApiResponse.<OrderResponse>builder()
-                .result(orderService.getOrderByCode(orderCode))
+    @GetMapping("/me")
+    @Operation(summary = "Lấy danh sách đơn hàng của tôi")
+    public ApiResponse<List<OrderResponse>> getMyOrders() {
+        return ApiResponse.<List<OrderResponse>>builder()
+                .result(orderService.getMyOrders())
                 .build();
     }
 
     @GetMapping
-    @Operation(summary = "Lấy danh sách tất cả đơn hàng")
-    public ApiResponse<List<OrderResponse>> getAllOrders() {
-        return ApiResponse.<List<OrderResponse>>builder()
-                .result(orderService.getAllOrders())
+    @Operation(summary = "Lấy danh sách đơn hàng có lọc và phân trang")
+    public ApiResponse<Page<OrderResponse>> getOrders(
+            @ModelAttribute OrderFilterRequest request
+    ) {
+        return ApiResponse.<Page<OrderResponse>>builder()
+                .result(orderService.filterOrders(request))
                 .build();
     }
 

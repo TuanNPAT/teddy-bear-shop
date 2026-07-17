@@ -10,6 +10,10 @@ public enum ErrorCode {
     UNAUTHENTICATED(1002, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1003, "You do not have permission", HttpStatus.FORBIDDEN),
 
+    INVALID_OTP(1101, "Invalid OTP", HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(1102, "OTP has expired", HttpStatus.BAD_REQUEST),
+    EMAIL_SEND_FAILED(1103, "Failed to send email", HttpStatus.INTERNAL_SERVER_ERROR),
+
     USER_EXISTED(2001, "User already exists", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(2002, "User not found", HttpStatus.NOT_FOUND),
     INVALID_PASSWORD(2003, "Invalid password", HttpStatus.UNAUTHORIZED),

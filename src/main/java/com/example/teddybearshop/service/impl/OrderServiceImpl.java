@@ -2,6 +2,7 @@ package com.example.teddybearshop.service.impl;
 
 import com.example.teddybearshop.common.exception.AppException;
 import com.example.teddybearshop.common.exception.ErrorCode;
+import com.example.teddybearshop.dto.request.OrderFilterRequest;
 import com.example.teddybearshop.dto.request.OrderRequest;
 import com.example.teddybearshop.dto.response.OrderResponse;
 import com.example.teddybearshop.enums.OrderStatus;
@@ -15,6 +16,10 @@ import com.example.teddybearshop.service.OrderService;
 import com.example.teddybearshop.service.UserContextService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,7 +108,6 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        // Nếu hủy đơn hàng, trả lại stock
         if (status == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.CANCELLED) {
             List<Product> productsToUpdate = new ArrayList<>();
             for (OrderDetail detail : order.getOrderDetails()) {
@@ -134,16 +138,43 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public OrderResponse getOrderByCode(String orderCode) {
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        return orderMapper.toResponse(order);
+    public Page<OrderResponse> filterOrders(OrderFilterRequest request) {
+        // Xử lý sort
+        Sort sort = Sort.by(Sort.Direction.ASC, "createdAt");
+        if (request.getSortBy() != null && !request.getSortBy().isEmpty()) {
+            Sort.Direction direction = "desc".equalsIgnoreCase(request.getSortDirection())
+                    ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
+            sort = Sort.by(direction, request.getSortBy());
+        }
+
+        int page = request.getPage() != null ? request.getPage() : 0;
+        int size = request.getSize() != null ? request.getSize() : 10;
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Order> orderPage = orderRepository.filterOrders(
+                request.getOrderCode(),
+                request.getStatus(),
+                request.getCustomerName(),
+                request.getCustomerPhone(),
+                request.getFromDate(),
+                request.getToDate(),
+                pageable
+        );
+
+        return orderPage.map(orderMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<OrderResponse> getAllOrders() {
-        return orderRepository.findAll()
+    public List<OrderResponse> getMyOrders() {
+        Long userId = userContextService.getCurrentUserId();
+
+        if (userId == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        return orderRepository.findByUser_Id(userId)
                 .stream()
                 .map(orderMapper::toResponse)
                 .toList();

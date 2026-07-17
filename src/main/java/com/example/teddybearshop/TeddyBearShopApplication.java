@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class TeddyBearShopApplication {
-//    http://localhost:8080/swagger-ui/index.html#/
+//    http://localhost:8080/teddy-bear-shop/swagger-ui/index.html#/
 
     public static void main(String[] args) {
         DotenvLoader.loadEnv();

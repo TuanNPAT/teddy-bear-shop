@@ -7,6 +7,17 @@ import com.example.teddybearshop.dto.response.AuthResponse;
 import com.example.teddybearshop.dto.response.UserResponse;
 
 public interface AuthService {
-    UserResponse register(RegisterRequest request);
+    void sendOTPForRegister(String email);
+
+    UserResponse verifyOTPAndRegister(RegisterRequest request, String otp);
+
     AuthResponse login(LoginRequest request);
+
+    void sendOTPForForgotPassword(String email);
+
+    void resetPassword(String email, String otp, String newPassword);
+
+    AuthResponse resetPasswordAndLogin(String email, String otp, String newPassword);
+
+
 }

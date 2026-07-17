@@ -1,8 +1,10 @@
 package com.example.teddybearshop.service;
 
+import com.example.teddybearshop.dto.request.OrderFilterRequest;
 import com.example.teddybearshop.dto.request.OrderRequest;
 import com.example.teddybearshop.dto.response.OrderResponse;
 import com.example.teddybearshop.enums.OrderStatus;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -14,9 +16,9 @@ public interface OrderService {
 
     OrderResponse getOrderById(Long orderId);
 
-    OrderResponse getOrderByCode(String orderCode);
+    Page<OrderResponse> filterOrders(OrderFilterRequest request);
 
-    List<OrderResponse> getAllOrders();
+    List<OrderResponse> getMyOrders();
 
     List<OrderResponse> getOrdersByStatus(OrderStatus status);
 
