@@ -3,7 +3,7 @@ package com.example.teddybearshop.controller;
 import com.example.teddybearshop.common.response.ApiResponse;
 import com.example.teddybearshop.dto.request.ProductCreationRequest;
 import com.example.teddybearshop.dto.request.ProductSearchRequest;
-import com.example.teddybearshop.dto.request.ProductUpdateRequest;
+import com.example.teddybearshop.dto.request.ProductUpdateInfoRequest;
 import com.example.teddybearshop.dto.response.ProductPageResponse;
 import com.example.teddybearshop.dto.response.ProductResponse;
 import com.example.teddybearshop.service.ProductService;
@@ -12,8 +12,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -25,22 +27,45 @@ public class ProductController {
 
     private final ProductService productService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Tạo sản phẩm mới")
     public ResponseEntity<ProductResponse> create(
             @Valid @ModelAttribute ProductCreationRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(productService.create(request));
+                .body(productService.create(request, request.getFiles()));
+    }
+    @PutMapping("/{productId}/info")
+    @Operation(summary = "Cập nhật thông tin sản phẩm (không ảnh)")
+    public ApiResponse<ProductResponse> updateInfo(
+            @PathVariable Long productId,
+            @Valid @RequestBody ProductUpdateInfoRequest request
+    ) {
+        return ApiResponse.<ProductResponse>builder()
+                .result(productService.updateInfo(productId, request))
+                .build();
     }
 
-    @PutMapping("/{productId}")
-    @Operation(summary = "Cập nhật sản phẩm theo ID")
-    public ResponseEntity<ProductResponse> update(
+    @DeleteMapping("/{productId}/images")
+    @Operation(summary = "Xóa ảnh trong sản phẩm")
+    public ApiResponse<ProductResponse> deleteImages(
             @PathVariable Long productId,
-            @Valid @ModelAttribute ProductUpdateRequest request
+            @RequestBody List<String> imageUrls
     ) {
-        return ResponseEntity.ok(productService.update(productId, request));
+        return ApiResponse.<ProductResponse>builder()
+                .result(productService.deleteImages(productId, imageUrls))
+                .build();
+    }
+
+    @PostMapping(value = "/{productId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Thêm ảnh vào sản phẩm")
+    public ApiResponse<ProductResponse> addImages(
+            @PathVariable Long productId,
+            @RequestParam("files") List<MultipartFile> files
+    ) {
+        return ApiResponse.<ProductResponse>builder()
+                .result(productService.addImages(productId, files))
+                .build();
     }
 
     @GetMapping

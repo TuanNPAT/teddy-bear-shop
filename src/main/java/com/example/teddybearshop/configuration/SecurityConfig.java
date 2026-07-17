@@ -35,7 +35,8 @@ public class SecurityConfig {
     // API Product public (không cần auth)
     private static final String[] PUBLIC_PRODUCT_ENDPOINTS = {
             "/api/v1/products",           // GET - Lấy danh sách sản phẩm
-            "/api/v1/products/{productId}" // GET - Lấy chi tiết sản phẩm
+            "/api/v1/products/{productId}", // GET - Lấy chi tiết sản phẩm
+            "/api/v1/payments/vnpay-return"
     };
 
     @Bean

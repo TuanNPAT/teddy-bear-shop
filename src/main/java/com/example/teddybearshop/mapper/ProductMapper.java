@@ -1,6 +1,6 @@
 package com.example.teddybearshop.mapper;
 
-import com.example.teddybearshop.dto.request.ProductUpdateRequest;
+import com.example.teddybearshop.dto.request.ProductUpdateInfoRequest;
 import com.example.teddybearshop.dto.response.ProductResponse;
 import com.example.teddybearshop.model.Product;
 import org.mapstruct.Mapper;
@@ -12,6 +12,6 @@ public interface ProductMapper {
 
     ProductResponse toResponse(Product product);
 
-    void updateProductFromRequest(ProductUpdateRequest request, @MappingTarget Product product);
+    void updateProductInfoFromRequest(ProductUpdateInfoRequest request, @MappingTarget Product product);
 
 }

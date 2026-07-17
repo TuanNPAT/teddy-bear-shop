@@ -4,7 +4,7 @@ import com.example.teddybearshop.common.exception.AppException;
 import com.example.teddybearshop.common.exception.ErrorCode;
 import com.example.teddybearshop.dto.request.ProductCreationRequest;
 import com.example.teddybearshop.dto.request.ProductSearchRequest;
-import com.example.teddybearshop.dto.request.ProductUpdateRequest;
+import com.example.teddybearshop.dto.request.ProductUpdateInfoRequest;
 import com.example.teddybearshop.dto.response.ProductPageResponse;
 import com.example.teddybearshop.dto.response.ProductResponse;
 import com.example.teddybearshop.enums.ProductCategory;
@@ -23,10 +23,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,8 +42,8 @@ public class ProductServiceImpl implements ProductService {
     private final UserContextService userContextService;
 
     @Override
-    public ProductResponse create(ProductCreationRequest request) {
-        List<String> imageUrls = minioService.uploadFiles(request.getFiles());
+    public ProductResponse create(ProductCreationRequest request, List<MultipartFile> files) {
+        List<String> imageUrls = minioService.uploadFiles(files);
 
         Product product = Product.builder()
                 .productCode(generateProductCode())
@@ -65,51 +67,100 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toResponse(product);
     }
 
+    // 1. Update thông tin sản phẩm (không ảnh)
     @Override
     @Transactional
-    public ProductResponse update(Long productId, ProductUpdateRequest request) {
+    public ProductResponse updateInfo(Long productId, ProductUpdateInfoRequest request) {
         Product product = productRepository
                 .findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        productMapper.updateProductFromRequest(request, product);
-
-        List<String> currentImages = new ArrayList<>(product.getImageUrls());
-        List<String> finalImages = new ArrayList<>();
-
-        if (request.getDeleteImageUrls() != null && !request.getDeleteImageUrls().isEmpty()) {
-            for (String deleteUrl : request.getDeleteImageUrls()) {
-                String objectName = minioService.extractObjectNameFromUrl(deleteUrl);
-                if (objectName != null) {
-                    minioService.deleteFile(objectName);
-                }
-                currentImages.remove(deleteUrl);
-            }
-        }
-
-        if (request.getKeepImageUrls() != null && !request.getKeepImageUrls().isEmpty()) {
-            finalImages.addAll(request.getKeepImageUrls());
-        } else {
-            finalImages.addAll(currentImages);
-        }
-
-        if (request.getNewFiles() != null && !request.getNewFiles().isEmpty()) {
-            List<String> newImageUrls = minioService.uploadFiles(request.getNewFiles());
-            finalImages.addAll(newImageUrls);
-        }
-
-        product.setImageUrls(finalImages);
+        productMapper.updateProductInfoFromRequest(request, product);
         product.setUpdatedBy(userContextService.getCurrentUsername());
 
         productRepository.save(product);
 
-        log.info("Updated product with ID: {} by {}",
+        log.info("Updated info for product ID: {} by {}",
                 productId,
                 userContextService.getCurrentUsername()
         );
 
         return productMapper.toResponse(product);
     }
+
+    // 2. Xóa ảnh trong product
+    @Override
+    @Transactional
+    public ProductResponse deleteImages(Long productId, List<String> imageUrls) {
+        Product product = productRepository
+                .findByProductIdAndDeletedAtIsNull(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        List<String> currentImages = new ArrayList<>(product.getImageUrls());
+
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            for (String imageUrl : imageUrls) {
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    // Xóa trên MinIO
+                    String objectName = minioService.extractObjectNameFromUrl(imageUrl);
+                    if (objectName != null) {
+                        minioService.deleteFile(objectName);
+                    }
+                    // Xóa khỏi danh sách
+                    currentImages.remove(imageUrl);
+                }
+            }
+        }
+
+        product.setImageUrls(currentImages);
+        product.setUpdatedBy(userContextService.getCurrentUsername());
+
+        productRepository.save(product);
+
+        log.info("Deleted {} images from product ID: {} by {}",
+                imageUrls != null ? imageUrls.size() : 0,
+                productId,
+                userContextService.getCurrentUsername()
+        );
+
+        return productMapper.toResponse(product);
+    }
+
+    // 3. Thêm ảnh vào product
+    @Override
+    @Transactional
+    public ProductResponse addImages(Long productId, List<MultipartFile> files) {
+        Product product = productRepository
+                .findByProductIdAndDeletedAtIsNull(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        List<String> currentImages = new ArrayList<>(product.getImageUrls());
+
+        if (files != null && !files.isEmpty()) {
+            List<MultipartFile> validFiles = files.stream()
+                    .filter(f -> f != null && !f.isEmpty())
+                    .collect(Collectors.toList());
+
+            if (!validFiles.isEmpty()) {
+                List<String> newImageUrls = minioService.uploadFiles(validFiles);
+                currentImages.addAll(newImageUrls);
+            }
+        }
+
+        product.setImageUrls(currentImages);
+        product.setUpdatedBy(userContextService.getCurrentUsername());
+
+        productRepository.save(product);
+
+        log.info("Added {} images to product ID: {} by {}",
+                files != null ? files.size() : 0,
+                productId,
+                userContextService.getCurrentUsername()
+        );
+
+        return productMapper.toResponse(product);
+    }
+
 
     @Override
     @Transactional

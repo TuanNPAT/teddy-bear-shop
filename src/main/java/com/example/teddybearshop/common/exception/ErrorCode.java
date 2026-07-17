@@ -26,7 +26,16 @@ public enum ErrorCode {
     PRODUCT_NOT_FOUND(4001, "Product not found", HttpStatus.NOT_FOUND),
 
     UPLOAD_FILE_FAILED(5000, "Upload file failed", HttpStatus.NOT_FOUND),
-    DELETE_FILE_FAILED(5001,"Deleted file failed", HttpStatus.BAD_REQUEST);
+    DELETE_FILE_FAILED(5001,"Deleted file failed", HttpStatus.BAD_REQUEST),
+
+    ORDER_NOT_FOUND(6100, "Order not found", HttpStatus.NOT_FOUND),
+    ORDER_CANNOT_BE_PAID(6101, "Order cannot be paid", HttpStatus.BAD_REQUEST),
+    ORDER_CANNOT_BE_CANCELLED(6102, "Order cannot be cancelled", HttpStatus.BAD_REQUEST),
+    ORDER_ALREADY_PAID(6103, "Order already paid", HttpStatus.BAD_REQUEST),
+    PAYMENT_NOT_FOUND(6104, "Payment not found", HttpStatus.NOT_FOUND),
+    PAYMENT_ALREADY_EXISTS(6105, "Payment already exists", HttpStatus.BAD_REQUEST),
+    INVALID_PAYMENT_METHOD(6106, "Invalid payment method", HttpStatus.BAD_REQUEST),
+    INVALID_SIGNATURE(6107, "Invalid signature", HttpStatus.BAD_REQUEST);;
 
     private final int code;
     private final String message;
