@@ -46,4 +46,19 @@ public class UserContextServiceImpl implements UserContextService {
             return null;
         }
     }
+
+    @Override
+    public User getCurrentUser() {
+        try {
+            String email = getCurrentUsername();
+            if (email == null || "SYSTEM".equals(email)) {
+                return null;
+            }
+            return userRepository.findByEmail(email)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("Failed to get current user", e);
+            return null;
+        }
+    }
 }

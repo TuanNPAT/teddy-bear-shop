@@ -31,6 +31,9 @@ public class OrderDetail {
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(length = 500)
+    private String productImageUrl;
+
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 

@@ -10,6 +10,7 @@ import com.example.teddybearshop.mapper.OrderMapper;
 import com.example.teddybearshop.model.Order;
 import com.example.teddybearshop.model.OrderDetail;
 import com.example.teddybearshop.model.Product;
+import com.example.teddybearshop.model.User;
 import com.example.teddybearshop.repository.OrderRepository;
 import com.example.teddybearshop.repository.ProductRepository;
 import com.example.teddybearshop.service.OrderService;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +42,11 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
-        // 1. Tạo order
+        User user = userContextService.getCurrentUser();
+        if (user == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
         Order order = Order.builder()
                 .orderCode(generateOrderCode())
                 .customerName(request.getCustomerName())
@@ -49,10 +55,10 @@ public class OrderServiceImpl implements OrderService {
                 .paymentMethod(request.getPaymentMethod())
                 .status(OrderStatus.PENDING)
                 .note(request.getNote())
-                .createdBy(userContextService.getCurrentUsername())
+                .user(user)
+                .createdBy(user.getEmail())
                 .build();
 
-        // 2. Tính tổng tiền và tạo order details
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderDetail> orderDetails = new ArrayList<>();
         List<Product> productsToUpdate = new ArrayList<>();
@@ -61,20 +67,23 @@ public class OrderServiceImpl implements OrderService {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-            // Kiểm tra stock
             if (product.getStock() < item.getQuantity()) {
                 throw new AppException(ErrorCode.PRODUCT_INSUFFICIENT_STOCK);
             }
 
-            // Tính subtotal
             BigDecimal price = product.getPrice();
             BigDecimal subtotal = price.multiply(BigDecimal.valueOf(item.getQuantity()));
 
-            // Tạo order detail
+            String productImageUrl = null;
+            if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
+                productImageUrl = product.getImageUrls().get(0);
+            }
+
             OrderDetail detail = OrderDetail.builder()
                     .order(order)
                     .productId(product.getProductId())
                     .productName(product.getName())
+                    .productImageUrl(productImageUrl)
                     .quantity(item.getQuantity())
                     .price(price)
                     .subtotal(subtotal)
@@ -82,20 +91,17 @@ public class OrderServiceImpl implements OrderService {
 
             orderDetails.add(detail);
 
-            // Cập nhật stock (để sau saveAll)
             product.setStock(product.getStock() - item.getQuantity());
             productsToUpdate.add(product);
 
             totalAmount = totalAmount.add(subtotal);
         }
 
-        // 3. Set total amount và order details
         order.setTotalAmount(totalAmount);
         order.setOrderDetails(orderDetails);
 
-        // 4. Lưu order và update stock
         Order savedOrder = orderRepository.save(order);
-        productRepository.saveAll(productsToUpdate);  // 1 lần gọi DB
+        productRepository.saveAll(productsToUpdate);
 
         log.info("Created order: {} by {}", savedOrder.getOrderCode(), savedOrder.getCreatedBy());
 
@@ -139,7 +145,6 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public Page<OrderResponse> filterOrders(OrderFilterRequest request) {
-        // Xử lý sort
         Sort sort = Sort.by(Sort.Direction.ASC, "createdAt");
         if (request.getSortBy() != null && !request.getSortBy().isEmpty()) {
             Sort.Direction direction = "desc".equalsIgnoreCase(request.getSortDirection())
@@ -199,6 +204,12 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException(ErrorCode.ORDER_CANNOT_BE_CANCELLED);
         }
 
+        // Nếu order đã PAID, cần xử lý hoàn tiền (sẽ làm sau)
+        if (order.getStatus() == OrderStatus.PAID) {
+            log.info("Order {} is PAID, need refund process", order.getOrderCode());
+            // TODO: Tạo refund record
+        }
+
         // Trả lại stock
         List<Product> productsToUpdate = new ArrayList<>();
         for (OrderDetail detail : order.getOrderDetails()) {
@@ -210,15 +221,14 @@ public class OrderServiceImpl implements OrderService {
         productRepository.saveAll(productsToUpdate);
 
         order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelReason(reason);
         order.setUpdatedBy(userContextService.getCurrentUsername());
-        // Nếu có field cancelReason thì set ở đây
-        // order.setCancelReason(reason);
 
         orderRepository.save(order);
         log.info("Cancelled order {} by {}", order.getOrderCode(), userContextService.getCurrentUsername());
     }
 
     private String generateOrderCode() {
-        return "ORD" + System.currentTimeMillis();
+        return "ORD" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }

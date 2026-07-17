@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -281,6 +282,6 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private String generateProductCode() {
-        return "PRD" + System.currentTimeMillis();
+        return "PRD" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }
