@@ -2,11 +2,11 @@ import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1', // wait, auth is /api/auth, but orders are /api/v1/orders
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/teddy-bear-shop/api/v1',
 });
 
 export const authApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/teddy-bear-shop/api',
 });
 
 const authInterceptor = (config: InternalAxiosRequestConfig) => {
