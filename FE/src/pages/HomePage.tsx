@@ -7,6 +7,7 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { MOCK_CATEGORIES } from '../mock/mockData';
 import { Skeleton } from '../components/ui/skeleton';
+import BannerBear from '../assets/Gemini_Generated_Image_yxi75yyxi75yyxi7.png';
 
 export default function HomePage() {
   const [data, setData] = useState<ProductPageResponse | null>(null);
@@ -55,7 +56,7 @@ export default function HomePage() {
           </div>
           <div className="relative h-64 md:h-full w-full bg-muted/50 hidden sm:block">
             <img 
-              src="https://images.unsplash.com/photo-1559441113-172ce3cc17fc?q=80&w=1200&auto=format&fit=crop" 
+              src={BannerBear} 
               alt="Teddy bear" 
               className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-90"
             />
