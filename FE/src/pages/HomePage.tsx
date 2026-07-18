@@ -21,9 +21,16 @@ export default function HomePage() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const params: Record<string, string | number> = { size: 12 };
-        if (search) params.name = search;
-        if (category !== 'ALL') params.category = category;
+        const params: Record<string, string | number> = { 
+          size: 12,
+          name: search || "",
+          category: category === 'ALL' ? "" : category,
+          minPrice: 0,
+          maxPrice: 5000000000000,
+          page: 0,
+          sortBy: "createdAt",
+          sortDirection: "desc"
+        };
         
         const result = await productApi.getProducts(params);
         setData(result);

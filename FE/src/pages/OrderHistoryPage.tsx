@@ -8,6 +8,16 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import OrderDetailModal from '../components/order/OrderDetailModal';
 import { Skeleton } from '../components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 export default function OrderHistoryPage() {
   const { isAuthenticated } = useAuthStore();
@@ -15,6 +25,7 @@ export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
+  const [orderIdToCancel, setOrderIdToCancel] = useState<number | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -37,13 +48,17 @@ export default function OrderHistoryPage() {
     fetchOrders();
   }, [isAuthenticated, navigate, fetchOrders]);
 
-  const handleCancelOrder = async (e: React.MouseEvent, orderId: number) => {
+  const handleCancelClick = (e: React.MouseEvent, orderId: number) => {
     e.stopPropagation();
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) return;
-    
+    setOrderIdToCancel(orderId);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderIdToCancel) return;
     try {
-      await orderApi.cancelOrder(orderId, 'Khách hàng tự hủy');
+      await orderApi.cancelOrder(orderIdToCancel, 'Khách hàng tự hủy');
       toast.success('Đã hủy đơn hàng thành công');
+      setOrderIdToCancel(null);
       fetchOrders(); // Refresh list
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -113,7 +128,7 @@ export default function OrderHistoryPage() {
                     variant="destructive" 
                     size="sm" 
                     className="rounded-xl font-bold px-6 shadow-sm"
-                    onClick={(e) => handleCancelOrder(e, order.orderId)}
+                    onClick={(e) => handleCancelClick(e, order.orderId)}
                   >
                     Hủy đơn
                   </Button>
@@ -129,6 +144,30 @@ export default function OrderHistoryPage() {
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
       />
+
+      <AlertDialog open={orderIdToCancel !== null} onOpenChange={(open) => !open && setOrderIdToCancel(null)}>
+        <AlertDialogContent className="rounded-3xl p-6 border-transparent shadow-xl max-w-md bg-card">
+          <AlertDialogHeader className="sm:place-items-center">
+            <AlertDialogTitle className="text-xl font-extrabold text-foreground w-full text-center sm:text-center">
+              Xác nhận hủy đơn hàng
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm font-medium text-muted-foreground mt-2 leading-relaxed w-full text-center sm:text-center">
+              Bạn có chắc muốn hủy đơn hàng #{orderIdToCancel}? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex flex-col sm:flex-row gap-3 justify-center sm:justify-center">
+            <AlertDialogCancel className="rounded-xl border border-border bg-background hover:bg-muted text-foreground h-11 font-semibold px-5 mt-0 w-full sm:w-auto">
+              Không, giữ lại đơn
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmCancelOrder}
+              className="rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground h-11 font-semibold px-5 shadow-sm w-full sm:w-auto"
+            >
+              Hủy đơn hàng
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -176,8 +176,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.14 0.01 285);
   
-  --primary: oklch(0.14 0.01 285); /* Black CTA buttons for premium feel */
-  --primary-foreground: oklch(1 0 0); /* White text on black button */
+  --primary: oklch(0.60 0.16 35); /* Warm terracotta primary */
+  --primary-foreground: oklch(1 0 0); /* White text on primary button */
   
   --secondary: oklch(0.96 0.01 285); /* Light slate */
   --secondary-foreground: oklch(0.14 0.01 285);

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import type { Product } from '../../api/productApi';
@@ -5,6 +6,7 @@ import { Card, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useCartStore } from '../../stores/useCartStore';
+import ProductImageFallback from './ProductImageFallback';
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +15,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const isOutOfStock = product.stock === 0;
+  const [imgError, setImgError] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -22,42 +25,48 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price);
-  // Use a real placeholder image instead of text-based placeholder
-  const displayImage = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=400&auto=format&fit=crop';
+  const displayImage = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
 
   return (
     <Link to={`/products/${product.productId}`} className="group relative block h-full">
-      <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-border shadow-sm rounded-[1.5rem]">
-        <div className="relative aspect-square overflow-hidden bg-muted/20">
-          <img
-            src={displayImage}
-            alt={product.name}
-            className={`object-cover w-full h-full transition-transform duration-700 group-hover:scale-105 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
-          />
+      <Card className="h-full flex flex-col overflow-hidden rounded-[1.25rem] border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300">
+        <div className="relative mx-3 mt-3 aspect-square overflow-hidden rounded-xl bg-muted/20 shrink-0">
+          {!displayImage || imgError ? (
+            <ProductImageFallback />
+          ) : (
+            <img
+              src={displayImage}
+              alt={product.name}
+              onError={() => setImgError(true)}
+              className={`object-cover w-full h-full transition-transform duration-700 group-hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''}`}
+            />
+          )}
           {isOutOfStock && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/30 backdrop-blur-sm">
-              <Badge variant="secondary" className="text-sm px-4 py-1.5 font-bold shadow-sm">Hết hàng</Badge>
-            </div>
+            <Badge className="absolute top-2 left-2 rounded-full bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground border-none shadow-sm">
+              Hết hàng
+            </Badge>
           )}
         </div>
         
-        <CardContent className="p-5 flex flex-col gap-2">
-          <h3 className="font-bold text-lg line-clamp-2 leading-tight text-foreground transition-colors">
+        <CardContent className="px-5 pb-0 pt-4 flex flex-col flex-1">
+          <h3 className="text-lg tracking-tight text-foreground font-semibold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
             {product.name}
           </h3>
-          <p className="font-semibold text-muted-foreground text-xl mt-auto">
-            {formattedPrice}
-          </p>
+          <div className="mt-2 flex items-center justify-between mt-auto">
+            <p className="text-2xl font-bold text-primary">
+              {formattedPrice}
+            </p>
+          </div>
         </CardContent>
         
-        <CardFooter className="p-5 pt-0">
+        <CardFooter className="px-5 pb-5 pt-4 shrink-0">
           <Button 
-            className="w-full gap-2 rounded-xl font-bold h-12 shadow-sm hover:shadow-md transition-all" 
+            className="w-full flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all focus:outline-none focus:ring-4 focus:ring-primary/20 h-11 shadow-sm"
             disabled={isOutOfStock}
             onClick={handleAddToCart}
           >
-            <ShoppingCart className="h-5 w-5" />
-            Thêm vào giỏ
+            <ShoppingCart className="mr-2 h-5 w-5" />
+            {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ"}
           </Button>
         </CardFooter>
       </Card>
