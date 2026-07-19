@@ -27,7 +27,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponse getMyProfile() {
         User currentUser = userContextService.getCurrentUser();
-        
+
         if (currentUser == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
@@ -39,14 +39,21 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse updateProfile(UpdateProfileRequest request) {
         User currentUser = userContextService.getCurrentUser();
-        
         if (currentUser == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
         currentUser.setFullName(request.getFullName());
 
+        if (request.getPhone() != null) {
+            currentUser.setPhone(request.getPhone());
+        }
+
+        if (request.getAddress() != null) {
+            currentUser.setAddress(request.getAddress());
+        }
+
         User updatedUser = userRepository.save(currentUser);
-        
+
         log.info("Updated profile for user: {}", updatedUser.getEmail());
 
         return userMapper.toResponse(updatedUser);
