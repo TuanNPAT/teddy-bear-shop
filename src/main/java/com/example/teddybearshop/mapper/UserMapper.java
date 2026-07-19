@@ -2,11 +2,12 @@ package com.example.teddybearshop.mapper;
 
 import com.example.teddybearshop.dto.response.UserResponse;
 import com.example.teddybearshop.model.User;
+import org.mapstruct.Mapper;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-public class UserMapper {
-    public static UserResponse toResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getId()).fullName(user.getFullName()).email(user.getEmail())
-                .role(user.getRole()).status(user.getStatus()).build();
-    }
+@Mapper(componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+public interface UserMapper {
+
+    UserResponse toResponse(User user);
 }

@@ -40,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
     private final OtpCache otpCache;
+    private final UserMapper userMapper;
 
     @Value("${jwt.secret}")
     private String signerKey;
@@ -81,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
         log.info("User registered: {}", savedUser.getEmail());
 
-        return UserMapper.toResponse(savedUser);
+        return userMapper.toResponse(savedUser);
     }
 
     // ==================== LOGIN ====================

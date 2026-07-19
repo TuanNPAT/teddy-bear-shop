@@ -1,17 +1,22 @@
 package com.example.teddybearshop.dto.response;
 
 import com.example.teddybearshop.enums.Role;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+import java.time.LocalDateTime;
+
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class UserResponse {
     private Long id;
     private String fullName;
     private String email;
     private Role role;
     private Boolean status;
+    private LocalDateTime createdAt;
 }
