@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../stores/useCartStore';
 import { Button } from '../components/ui/button';
 import { Trash2, Minus, Plus, ShoppingBag } from 'lucide-react';
+import ProductImageFallback from '../components/product/ProductImageFallback';
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore();
   const navigate = useNavigate();
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
 
   const formatPrice = (price: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   const formattedTotal = formatPrice(getTotalPrice());
@@ -36,11 +39,16 @@ export default function CartPage() {
           {items.map((item) => (
             <div key={item.productId} className="flex flex-col sm:flex-row gap-5 p-5 bg-card rounded-[1.5rem] border border-border shadow-sm">
               <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted/20 border border-border/50 shrink-0">
-                <img 
-                  src={item.imageUrls?.[0] || 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=200&auto=format&fit=crop'} 
-                  alt={item.name} 
-                  className="w-full h-full object-cover"
-                />
+                {!item.imageUrls?.[0] || imageErrors[item.productId] ? (
+                  <ProductImageFallback emojiClassName="text-3xl" showText={false} />
+                ) : (
+                  <img 
+                    src={item.imageUrls[0]} 
+                    alt={item.name} 
+                    onError={() => setImageErrors((prev) => ({ ...prev, [item.productId]: true }))}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
               
               <div className="flex-1 flex flex-col justify-between">

@@ -9,6 +9,8 @@ import ProfilePage from '../pages/ProfilePage';
 import CheckoutPage from '../pages/CheckoutPage';
 import ThankYouPage from '../pages/ThankYouPage';
 import OrderHistoryPage from '../pages/OrderHistoryPage';
+import AboutPage from '../pages/AboutPage';
+import ContactPage from '../pages/ContactPage';
 
 export default function AppRouter() {
   return (
@@ -24,6 +26,8 @@ export default function AppRouter() {
           <Route path="checkout" element={<CheckoutPage />} />
           <Route path="thank-you" element={<ThankYouPage />} />
           <Route path="orders" element={<OrderHistoryPage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="contact" element={<ContactPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

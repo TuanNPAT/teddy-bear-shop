@@ -11,10 +11,12 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
+import ProductImageFallback from '../components/product/ProductImageFallback';
+import { phoneSchema } from '../lib/validators';
 
 const checkoutSchema = z.object({
   customerName: z.string().min(2, { message: 'Họ tên phải có ít nhất 2 ký tự' }),
-  customerPhone: z.string().min(10, { message: 'Số điện thoại không hợp lệ' }),
+  customerPhone: phoneSchema,
   shippingAddress: z.string().min(5, { message: 'Địa chỉ nhận hàng quá ngắn' }),
   paymentMethod: z.enum(['COD', 'VNPAY']),
   note: z.string().optional(),
@@ -26,6 +28,7 @@ export default function CheckoutPage() {
   const { isAuthenticated } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
@@ -156,7 +159,16 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div key={item.productId} className="flex gap-4 items-center">
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted border border-border/50 shrink-0">
-                    <img src={item.imageUrls?.[0] || 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=100&auto=format&fit=crop'} alt={item.name} className="w-full h-full object-cover" />
+                    {!item.imageUrls?.[0] || imageErrors[item.productId] ? (
+                      <ProductImageFallback emojiClassName="text-2xl" showText={false} />
+                    ) : (
+                      <img 
+                        src={item.imageUrls[0]} 
+                        alt={item.name} 
+                        onError={() => setImageErrors((prev) => ({ ...prev, [item.productId]: true }))}
+                        className="w-full h-full object-cover" 
+                      />
+                    )}
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-sm line-clamp-1 text-foreground">{item.name}</p>

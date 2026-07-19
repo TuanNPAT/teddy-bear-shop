@@ -11,9 +11,11 @@ import { toast } from 'sonner';
 import { Skeleton } from '../components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 
+import { phoneSchema } from '../lib/validators';
+
 const profileSchema = z.object({
   fullName: z.string().min(2, { message: 'Họ tên phải có ít nhất 2 ký tự' }),
-  phoneNumber: z.string().min(10, { message: 'Số điện thoại không hợp lệ' }),
+  phoneNumber: phoneSchema,
   shippingAddress: z.string().min(5, { message: 'Địa chỉ giao hàng quá ngắn' }),
 });
 
