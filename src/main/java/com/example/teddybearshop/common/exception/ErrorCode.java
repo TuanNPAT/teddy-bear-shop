@@ -9,6 +9,8 @@ public enum ErrorCode {
     INVALID_REQUEST(1001, "Invalid request", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED(1002, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1003, "You do not have permission", HttpStatus.FORBIDDEN),
+    ACCOUNT_DISABLED(1004,"Bạn đã bị chặn", HttpStatus.BAD_REQUEST),
+    ACCESS_DENIED(1005,"Access denied",HttpStatus.BAD_REQUEST),
 
     INVALID_OTP(1101, "Invalid OTP", HttpStatus.BAD_REQUEST),
     OTP_EXPIRED(1102, "OTP has expired", HttpStatus.BAD_REQUEST),
@@ -17,6 +19,13 @@ public enum ErrorCode {
     USER_EXISTED(2001, "User already exists", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(2002, "User not found", HttpStatus.NOT_FOUND),
     INVALID_PASSWORD(2003, "Invalid password", HttpStatus.UNAUTHORIZED),
+
+    CANNOT_UPDATE_SELF_STATUS(2011, "Cannot update own status", HttpStatus.BAD_REQUEST),
+    CANNOT_UPDATE_SELF_ROLE(2012, "Cannot update own role", HttpStatus.BAD_REQUEST),
+    CANNOT_DELETE_SELF(2013, "Cannot delete own account", HttpStatus.BAD_REQUEST),
+    CANNOT_BAN_ADMIN(2014, "Cannot ban admin account", HttpStatus.BAD_REQUEST),
+    CANNOT_DELETE_LAST_ADMIN(2015, "Cannot delete the last admin", HttpStatus.BAD_REQUEST),
+    CANNOT_REMOVE_LAST_ADMIN(2016, "Cannot remove the last admin", HttpStatus.BAD_REQUEST),
 
     PRODUCT_CODE_EXISTS(2101, "Product code already exists", HttpStatus.CONFLICT),
     PRODUCT_OUT_OF_STOCK(2102, "Product is out of stock", HttpStatus.BAD_REQUEST),

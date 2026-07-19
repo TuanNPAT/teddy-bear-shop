@@ -86,11 +86,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // ==================== LOGIN ====================
-
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!Boolean.TRUE.equals(user.getStatus())) {
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AppException(ErrorCode.INVALID_PASSWORD);
@@ -103,7 +106,6 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole())
                 .build();
     }
-
     // ==================== QUÊN MẬT KHẨU ====================
 
     @Override
