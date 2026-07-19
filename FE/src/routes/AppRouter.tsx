@@ -20,13 +20,23 @@ import AdminProducts from '../pages/admin/AdminProducts';
 import AdminCategories from '../pages/admin/AdminCategories';
 import AdminOrders from '../pages/admin/AdminOrders';
 import AdminStaff from '../pages/admin/AdminStaff';
+import AdminUsers from '../pages/admin/AdminUsers';
+
+import CustomerGuard from '../components/CustomerGuard';
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         {/* Customer / Client side routes */}
-        <Route path="/" element={<MainLayout />}>
+        <Route
+          path="/"
+          element={
+            <CustomerGuard>
+              <MainLayout />
+            </CustomerGuard>
+          }
+        >
           <Route index element={<HomePage />} />
           <Route path="products/:id" element={<ProductDetailPage />} />
           <Route path="cart" element={<CartPage />} />
@@ -79,6 +89,14 @@ export default function AppRouter() {
             element={
               <AdminGuard allowedRoles={['ADMIN']}>
                 <AdminStaff />
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <AdminGuard allowedRoles={['ADMIN']}>
+                <AdminUsers />
               </AdminGuard>
             }
           />

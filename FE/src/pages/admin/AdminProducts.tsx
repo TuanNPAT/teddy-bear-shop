@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { toast } from 'sonner';
-import { Search, Filter, Edit3, Trash2, Plus, Check, X, RotateCcw } from 'lucide-react';
+import { Search, Filter, Edit3, Trash2, Plus, Check, X, RotateCcw, Loader2 } from 'lucide-react';
 import { cmsMockApi } from '../../api/cmsMockApi';
 
 interface Product {
@@ -48,6 +48,7 @@ export default function AdminProducts() {
   const [productStatus, setProductStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [fallbackImageUrl, setFallbackImageUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Categories list
   const categories = cmsMockApi.getCategories();
@@ -131,10 +132,12 @@ export default function AdminProducts() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent double submit
     if (!name.trim()) return toast.error('Vui lòng nhập tên sản phẩm');
     if (!price || Number(price) < 0) return toast.error('Giá sản phẩm không hợp lệ');
     if (!stock || Number(stock) < 0) return toast.error('Số lượng tồn không hợp lệ');
 
+    setIsSubmitting(true);
     try {
       if (modalType === 'ADD') {
         const formData = new FormData();
@@ -185,6 +188,8 @@ export default function AdminProducts() {
       fetchProducts();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể lưu sản phẩm');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -593,8 +598,19 @@ export default function AdminProducts() {
                 <Button type="button" variant="ghost" className="rounded-xl h-12 px-6" onClick={() => setIsModalOpen(false)}>
                   Hủy bỏ
                 </Button>
-                <Button type="submit" className="rounded-xl h-12 px-6 font-bold">
-                  {modalType === 'ADD' ? 'Tạo sản phẩm' : 'Lưu thay đổi'}
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl h-12 px-6 font-bold min-w-[140px]"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {modalType === 'ADD' ? 'Đang tạo...' : 'Đang lưu...'}
+                    </>
+                  ) : (
+                    modalType === 'ADD' ? 'Tạo sản phẩm' : 'Lưu thay đổi'
+                  )}
                 </Button>
               </div>
             </form>

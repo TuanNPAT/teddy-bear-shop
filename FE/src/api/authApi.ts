@@ -32,5 +32,15 @@ export const authService = {
   verifyRegister: async (data: Record<string, string>, otp: string) => {
     const res = await authApi.post<{ result: UserResponse }>(`/auth/register/verify?otp=${otp}`, data);
     return res.data.result;
+  },
+
+  sendOtpForForgotPassword: async (email: string) => {
+    const res = await authApi.post<{ message: string }>('/auth/forgot-password/send-otp', { email });
+    return res.data;
+  },
+
+  resetPassword: async (data: Record<string, string>) => {
+    const res = await authApi.post<{ message: string }>('/auth/forgot-password/reset', data);
+    return res.data;
   }
 };

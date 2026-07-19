@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { MOCK_CATEGORIES } from '../mock/mockData';
 import { Skeleton } from '../components/ui/skeleton';
-import BannerBear from '../assets/Gemini_Generated_Image_yxi75yyxi75yyxi7.png';
+
 
 export default function HomePage() {
   const [data, setData] = useState<ProductPageResponse | null>(null);
@@ -51,25 +51,27 @@ export default function HomePage() {
   return (
     <div className="space-y-16 animate-in fade-in duration-700 pb-16">
       {/* Hero Section - Split Layout */}
-      <section className="relative overflow-hidden rounded-3xl bg-secondary/30 mt-6 border border-border/50">
-        <div className="grid md:grid-cols-2 items-center">
-          <div className="p-10 md:p-16 lg:p-20 space-y-6 text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.1] text-foreground">
-              Thế giới Gấu Bông Dành Cho Bạn
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-[65ch]">
-              Tìm kiếm những món quà ấm áp và dễ thương nhất để trao gửi yêu thương cho những người quan trọng.
-            </p>
-          </div>
-          <div className="relative h-64 md:h-full w-full bg-muted/50 hidden sm:block">
-            <img 
-              src={BannerBear} 
-              alt="Teddy bear" 
-              className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-90"
-            />
-          </div>
-        </div>
-      </section>
+<section className="relative overflow-hidden rounded-3xl bg-secondary/30 mt-6 border border-border/50">
+  <div className="grid md:grid-cols-2 min-h-[280px] md:min-h-[360px] items-stretch">
+    <div className="p-10 md:p-16 lg:p-20 space-y-6 text-left flex flex-col justify-center">
+      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.1] text-foreground">
+        Thế giới Gấu Bông Dành Cho Bạn
+      </h1>
+      <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-[65ch]">
+        Tìm kiếm những món quà ấm áp và dễ thương nhất để trao gửi yêu thương cho những người quan trọng.
+      </p>
+    </div>
+    
+    {/* ĐÃ SỬA TẠI ĐÂY */}
+    <div className="relative hidden md:block overflow-hidden w-full h-full">
+  <img 
+    src="/teddy-hero.png" 
+    alt="Teddy bear" 
+    className="w-full h-full object-cover opacity-90"
+  />
+</div>
+  </div>
+</section>
 
       {/* Filter & Search Bar */}
       <section className="flex flex-col md:flex-row gap-4 items-center justify-between">

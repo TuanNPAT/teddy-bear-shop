@@ -36,6 +36,7 @@ export default function AdminLayout() {
       else if (path === 'categories') label = 'Danh mục';
       else if (path === 'orders') label = 'Đơn hàng';
       else if (path === 'staff') label = 'Nhân sự';
+      else if (path === 'users') label = 'Người dùng';
       
       const to = '/' + paths.slice(0, idx + 1).join('/');
       const isLast = idx === paths.length - 1;
@@ -84,6 +85,12 @@ export default function AdminLayout() {
       label: 'Nhân sự',
       icon: Users,
       to: '/admin/staff',
+      roles: ['ADMIN']
+    },
+    {
+      label: 'Người dùng',
+      icon: Users,
+      to: '/admin/users',
       roles: ['ADMIN']
     }
   ];

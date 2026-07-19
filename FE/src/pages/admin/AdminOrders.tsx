@@ -14,7 +14,6 @@ interface OrderItem {
   productImageUrl: string;
   price: number;
   quantity: number;
-  subtotal: number;
 }
 
 interface Order {
@@ -24,7 +23,15 @@ interface Order {
   customerPhone: string;
   shippingAddress: string;
   totalAmount: number;
-  status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  status:
+    | 'PENDING'
+    | 'PAID'
+    | 'CONFIRMED'
+    | 'SHIPPING'
+    | 'DELIVERED'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'DELIVERY_FAILED';
   paymentMethod: 'COD' | 'VNPAY';
   createdAt: string;
   orderDetails: OrderItem[];
@@ -150,10 +157,13 @@ export default function AdminOrders() {
   const translateStatus = (status: string) => {
     switch (status) {
       case 'PENDING': return 'Chờ xác nhận';
+      case 'PAID': return 'Đã thanh toán (VNPay)';
       case 'CONFIRMED': return 'Đã xác nhận';
-      case 'SHIPPED': return 'Đang giao hàng';
+      case 'SHIPPING': return 'Đang giao hàng';
       case 'DELIVERED': return 'Đã giao hàng';
+      case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
+      case 'DELIVERY_FAILED': return 'Giao hàng thất bại';
       default: return status;
     }
   };
@@ -162,16 +172,76 @@ export default function AdminOrders() {
     switch (status) {
       case 'PENDING':
         return 'bg-amber-500/15 text-amber-600 border-amber-500/10';
+      case 'PAID':
+        return 'bg-cyan-500/15 text-cyan-600 border-cyan-500/10';
       case 'CONFIRMED':
         return 'bg-blue-500/15 text-blue-600 border-blue-500/10';
-      case 'SHIPPED':
+      case 'SHIPPING':
         return 'bg-purple-500/15 text-purple-600 border-purple-500/10';
       case 'DELIVERED':
+      case 'COMPLETED':
         return 'bg-emerald-500/15 text-emerald-600 border-emerald-500/10';
       case 'CANCELLED':
         return 'bg-destructive/15 text-destructive border-destructive/10';
+      case 'DELIVERY_FAILED':
+        return 'bg-orange-500/15 text-orange-600 border-orange-500/10';
       default:
         return 'bg-muted text-muted-foreground border-border';
+    }
+  };
+
+  /**
+   * Trả về danh sách các trạng thái TIẾN hợp lệ tiếp theo.
+   * - COD: PENDING → CONFIRMED → SHIPPING → DELIVERED → COMPLETED
+   *   (không có PAID — đơn COD không qua cổng thanh toán)
+   * - VNPAY: PENDING → PAID → CONFIRMED → SHIPPING → DELIVERED → COMPLETED
+   *   (PAID được set tự động bởi VNPay callback ở backend)
+   * - CANCELLED: được phép từ bất kỳ bước nào TRƯỚC DELIVERED/COMPLETED/CANCELLED
+   * - DELIVERY_FAILED: không có next status (terminal state cần xử lý thủ công)
+   */
+  const getNextStatuses = (currentStatus: string, paymentMethod: string): string[] => {
+    const isCOD = paymentMethod === 'COD';
+
+    const COD_FLOW: Record<string, string[]> = {
+      PENDING: ['CONFIRMED'],
+      CONFIRMED: ['SHIPPING'],
+      SHIPPING: ['DELIVERED'],
+      DELIVERED: ['COMPLETED'],
+      // Terminal states — no forward transition
+      COMPLETED: [],
+      CANCELLED: [],
+      DELIVERY_FAILED: [],
+    };
+
+    const VNPAY_FLOW: Record<string, string[]> = {
+      PENDING: ['PAID'],       // Normally PAID is set by VNPay callback automatically
+      PAID: ['CONFIRMED'],
+      CONFIRMED: ['SHIPPING'],
+      SHIPPING: ['DELIVERED'],
+      DELIVERED: ['COMPLETED'],
+      // Terminal states
+      COMPLETED: [],
+      CANCELLED: [],
+      DELIVERY_FAILED: [],
+    };
+
+    const flow = isCOD ? COD_FLOW : VNPAY_FLOW;
+    return flow[currentStatus] ?? [];
+  };
+
+  /** Có thể hủy đơn khi chưa đến trạng thái terminal */
+  const canCancel = (status: string): boolean => {
+    return !['DELIVERED', 'COMPLETED', 'CANCELLED', 'DELIVERY_FAILED'].includes(status);
+  };
+
+  const getNextStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'CONFIRMED': return 'Xác nhận đơn hàng';
+      case 'PAID': return 'Đánh dấu đã thanh toán VNPay';
+      case 'SHIPPING': return 'Bàn giao vận chuyển';
+      case 'DELIVERED': return 'Hoàn thành giao hàng';
+      case 'COMPLETED': return 'Đánh dấu hoàn thành';
+      default: return translateStatus(status);
     }
   };
 
@@ -259,11 +329,14 @@ export default function AdminOrders() {
               className="w-full rounded-xl bg-muted/20 border border-border p-2.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary h-11"
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="PENDING">Chờ xác nhận (Pending)</option>
-              <option value="CONFIRMED">Đã xác nhận (Confirmed)</option>
-              <option value="SHIPPED">Đang giao (Shipped)</option>
-              <option value="DELIVERED">Đã giao (Delivered)</option>
-              <option value="CANCELLED">Đã hủy (Cancelled)</option>
+              <option value="PENDING">Chờ xác nhận</option>
+              <option value="PAID">Đã thanh toán VNPay</option>
+              <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="SHIPPING">Đang giao hàng</option>
+              <option value="DELIVERED">Đã giao hàng</option>
+              <option value="COMPLETED">Hoàn thành</option>
+              <option value="CANCELLED">Đã hủy</option>
+              <option value="DELIVERY_FAILED">Giao hàng thất bại</option>
             </select>
           </div>
 
@@ -466,7 +539,11 @@ export default function AdminOrders() {
                       </div>
                     </div>
                     <span className="text-sm font-bold text-foreground">
-                      {formatPrice(item.subtotal)}
+                      {(() => {
+                        const p = Number(item.price);
+                        const q = Number(item.quantity);
+                        return !isNaN(p * q) ? formatPrice(p * q) : '—';
+                      })()}
                     </span>
                   </div>
                 ))}
@@ -488,12 +565,24 @@ export default function AdminOrders() {
 
             {/* Linear Workflow status actions */}
             <div className="pt-4 border-t border-border/50 flex flex-col gap-3">
+              {/* Payment method indicator */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-bold">Phương thức thanh toán:</span>
+                <span className={`px-2 py-0.5 rounded-full font-bold border text-xs ${
+                  selectedOrder.paymentMethod === 'COD'
+                    ? 'bg-amber-500/10 text-amber-700 border-amber-500/20'
+                    : 'bg-cyan-500/10 text-cyan-700 border-cyan-500/20'
+                }`}>
+                  {selectedOrder.paymentMethod === 'COD' ? '💵 COD (Tiền mặt khi nhận)' : '🏦 VNPay (Online)'}
+                </span>
+              </div>
+
               <div className="flex justify-between items-center">
                 <span className="text-sm font-bold text-foreground">Trình tự xử lý đơn hàng</span>
-                
-                <div className="flex gap-2">
-                  {/* Cancel workflow action (allowed anywhere before Delivered) */}
-                  {selectedOrder.status !== 'DELIVERED' && selectedOrder.status !== 'CANCELLED' && !showCancelInput && (
+
+                <div className="flex gap-2 flex-wrap justify-end">
+                  {/* Cancel: allowed if not yet in terminal state */}
+                  {canCancel(selectedOrder.status) && !showCancelInput && (
                     <Button
                       variant="outline"
                       onClick={() => setShowCancelInput(true)}
@@ -503,37 +592,28 @@ export default function AdminOrders() {
                     </Button>
                   )}
 
-                  {/* Pending -> Confirmed */}
-                  {selectedOrder.status === 'PENDING' && (
+                  {/* Dynamic next-status buttons based on payment method */}
+                  {getNextStatuses(selectedOrder.status, selectedOrder.paymentMethod).map(nextStatus => (
                     <Button
-                      onClick={() => handleUpdateStatus(selectedOrder.orderId, 'CONFIRMED')}
-                      className="rounded-xl font-bold bg-primary text-primary-foreground"
+                      key={nextStatus}
+                      onClick={() => handleUpdateStatus(selectedOrder.orderId, nextStatus)}
+                      className={`rounded-xl font-bold ${
+                        nextStatus === 'DELIVERED' || nextStatus === 'COMPLETED'
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-primary text-primary-foreground'
+                      }`}
                     >
-                      Xác nhận đơn
+                      {getNextStatusLabel(nextStatus)}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  )}
+                  ))}
 
-                  {/* Confirmed -> Shipped */}
-                  {selectedOrder.status === 'CONFIRMED' && (
-                    <Button
-                      onClick={() => handleUpdateStatus(selectedOrder.orderId, 'SHIPPED')}
-                      className="rounded-xl font-bold bg-primary text-primary-foreground"
-                    >
-                      Bàn giao vận chuyển
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  )}
-
-                  {/* Shipped -> Delivered */}
-                  {selectedOrder.status === 'SHIPPED' && (
-                    <Button
-                      onClick={() => handleUpdateStatus(selectedOrder.orderId, 'DELIVERED')}
-                      className="rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      Hoàn thành giao hàng
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                  {/* Terminal state message */}
+                  {getNextStatuses(selectedOrder.status, selectedOrder.paymentMethod).length === 0
+                    && !canCancel(selectedOrder.status) && (
+                    <span className="text-xs font-semibold text-muted-foreground italic">
+                      Đơn hàng đã kết thúc
+                    </span>
                   )}
                 </div>
               </div>
