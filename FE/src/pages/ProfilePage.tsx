@@ -111,7 +111,6 @@ export default function ProfilePage() {
             <Label htmlFor="shippingAddress" className="font-semibold text-foreground">Địa chỉ giao hàng mặc định</Label>
             <Input id="shippingAddress" placeholder="Nhập địa chỉ nhận hàng" {...register('shippingAddress')} className="rounded-xl bg-muted/20 border-border h-12 px-4 shadow-sm focus-visible:ring-primary" />
             {errors.shippingAddress && <p className="text-sm font-medium text-destructive">{errors.shippingAddress.message}</p>}
-            <p className="text-xs text-muted-foreground mt-1 font-medium">TODO: Backend API update profile đang thiếu, tạm lưu trên Mock API.</p>
           </div>
 
           <Button type="submit" className="rounded-xl h-14 px-10 text-lg font-bold shadow-sm hover:shadow-md transition-all mt-6" disabled={isSaving}>

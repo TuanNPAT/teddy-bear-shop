@@ -4,8 +4,11 @@ export interface UserResponse {
   id: number;
   fullName: string;
   email: string;
+  phone?: string | null;
+  address?: string | null;
   role: string;
   status: boolean;
+  createdAt?: string;
 }
 
 export interface AuthResponse {

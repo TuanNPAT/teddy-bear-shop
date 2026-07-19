@@ -1,34 +1,41 @@
-import { MOCK_PROFILE } from '../mock/mockData';
-import { useAuthStore } from '../stores/useAuthStore';
+import { api } from '../lib/api';
 
-// Temporary local store for profile since backend is missing it
-let localProfile = { ...MOCK_PROFILE };
+export interface UserProfileResponse {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  role: string;
+  status: boolean;
+  createdAt: string;
+}
 
 export const userApi = {
   getProfile: async () => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Merge with auth store's user info
-    const authUser = useAuthStore.getState().user;
+    const res = await api.get<{ result: UserProfileResponse }>('/users/me');
+    const data = res.data.result;
     return {
-      fullName: authUser?.email?.split('@')[0] || 'User',
-      email: authUser?.email || '',
-      ...localProfile
+      fullName: data.fullName,
+      email: data.email,
+      phoneNumber: data.phone || '',
+      shippingAddress: data.address || '',
     };
   },
   
   updateProfile: async (data: { fullName: string; phoneNumber: string; shippingAddress: string }) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Save to local variable
-    localProfile = {
-      phoneNumber: data.phoneNumber,
-      shippingAddress: data.shippingAddress
+    const requestBody = {
+      fullName: data.fullName,
+      phone: data.phoneNumber || null,
+      address: data.shippingAddress || null,
     };
-    
-    // NOTE: fullName would normally be updated in the User record too
-    return { success: true };
+    const res = await api.patch<{ result: UserProfileResponse }>('/users/me', requestBody);
+    const updatedData = res.data.result;
+    return {
+      fullName: updatedData.fullName,
+      email: updatedData.email,
+      phoneNumber: updatedData.phone || '',
+      shippingAddress: updatedData.address || '',
+    };
   }
 };

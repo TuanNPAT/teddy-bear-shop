@@ -5,9 +5,3 @@ export const MOCK_CATEGORIES = [
   { id: 'ACCESSORY', name: 'Phụ kiện' },
   { id: 'GIFT_SET', name: 'Set quà tặng' },
 ];
-
-// Fallback user profile since backend is missing it
-export const MOCK_PROFILE = {
-  phoneNumber: '0123456789',
-  shippingAddress: '123 Đường Gấu Bông, Quận 1, TP. HCM',
-};
