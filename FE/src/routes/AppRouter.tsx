@@ -12,10 +12,20 @@ import OrderHistoryPage from '../pages/OrderHistoryPage';
 import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
 
+// Admin CMS Layout, Guard, and Pages
+import AdminLayout from '../components/layout/AdminLayout';
+import AdminGuard from '../components/admin/AdminGuard';
+import AdminDashboard from '../pages/admin/AdminDashboard';
+import AdminProducts from '../pages/admin/AdminProducts';
+import AdminCategories from '../pages/admin/AdminCategories';
+import AdminOrders from '../pages/admin/AdminOrders';
+import AdminStaff from '../pages/admin/AdminStaff';
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Customer / Client side routes */}
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="products/:id" element={<ProductDetailPage />} />
@@ -28,6 +38,60 @@ export default function AppRouter() {
           <Route path="orders" element={<OrderHistoryPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
+        </Route>
+
+        {/* Admin CMS routes */}
+        <Route
+          path="/admin"
+          element={
+            <AdminGuard allowedRoles={['ADMIN', 'STAFF']}>
+              <AdminLayout />
+            </AdminGuard>
+          }
+        >
+          {/* Admin only views */}
+          <Route
+            index
+            element={
+              <AdminGuard allowedRoles={['ADMIN']}>
+                <AdminDashboard />
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="products"
+            element={
+              <AdminGuard allowedRoles={['ADMIN']}>
+                <AdminProducts />
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="categories"
+            element={
+              <AdminGuard allowedRoles={['ADMIN']}>
+                <AdminCategories />
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="staff"
+            element={
+              <AdminGuard allowedRoles={['ADMIN']}>
+                <AdminStaff />
+              </AdminGuard>
+            }
+          />
+
+          {/* Admin & Staff shared views */}
+          <Route
+            path="orders"
+            element={
+              <AdminGuard allowedRoles={['ADMIN', 'STAFF']}>
+                <AdminOrders />
+              </AdminGuard>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>

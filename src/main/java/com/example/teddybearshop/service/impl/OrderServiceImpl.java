@@ -145,12 +145,17 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public Page<OrderResponse> filterOrders(OrderFilterRequest request) {
-        Sort sort = Sort.by(Sort.Direction.ASC, "createdAt");
+        Sort sort = Sort.by(Sort.Direction.ASC, "created_at");
         if (request.getSortBy() != null && !request.getSortBy().isEmpty()) {
             Sort.Direction direction = "desc".equalsIgnoreCase(request.getSortDirection())
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
-            sort = Sort.by(direction, request.getSortBy());
+            // Convert camelCase to snake_case for native SQL
+            String sortField = request.getSortBy()
+                    .replaceAll("([A-Z])", "_$1")
+                    .toLowerCase()
+                    .replaceAll("^_", "");
+            sort = Sort.by(direction, sortField);
         }
 
         int page = request.getPage() != null ? request.getPage() : 0;
@@ -159,11 +164,11 @@ public class OrderServiceImpl implements OrderService {
 
         Page<Order> orderPage = orderRepository.filterOrders(
                 request.getOrderCode(),
-                request.getStatus(),
+                request.getStatus() != null ? request.getStatus().name() : null,
                 request.getCustomerName(),
                 request.getCustomerPhone(),
-                request.getFromDate(),
-                request.getToDate(),
+                request.getFromDate() != null ? request.getFromDate().toString() : null,
+                request.getToDate() != null ? request.getToDate().toString() : null,
                 pageable
         );
 

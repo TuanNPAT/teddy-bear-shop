@@ -22,18 +22,26 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByUser_Id(Long userId);
 
-    @Query("SELECT o FROM Order o WHERE " +
-            "(:orderCode IS NULL OR o.orderCode LIKE CONCAT('%', :orderCode, '%')) " +
-            "AND (:status IS NULL OR o.status = :status) " +
-            "AND (:customerName IS NULL OR o.customerName LIKE CONCAT('%', :customerName, '%')) " +
-            "AND (:customerPhone IS NULL OR o.customerPhone LIKE CONCAT('%', :customerPhone, '%')) " +
-            "AND (:fromDate IS NULL OR o.createdAt >= :fromDate) " +
-            "AND (:toDate IS NULL OR o.createdAt <= :toDate)")
+    @Query(value = "SELECT o.* FROM orders o WHERE " +
+            "(CAST(:orderCode AS varchar) IS NULL OR o.order_code LIKE '%' || CAST(:orderCode AS varchar) || '%') " +
+            "AND (CAST(:status AS varchar) IS NULL OR o.status = CAST(:status AS varchar)) " +
+            "AND (CAST(:customerName AS varchar) IS NULL OR o.customer_name LIKE '%' || CAST(:customerName AS varchar) || '%') " +
+            "AND (CAST(:customerPhone AS varchar) IS NULL OR o.customer_phone LIKE '%' || CAST(:customerPhone AS varchar) || '%') " +
+            "AND (CAST(:fromDate AS timestamp) IS NULL OR o.created_at >= CAST(:fromDate AS timestamp)) " +
+            "AND (CAST(:toDate AS timestamp) IS NULL OR o.created_at <= CAST(:toDate AS timestamp))",
+            countQuery = "SELECT COUNT(*) FROM orders o WHERE " +
+            "(CAST(:orderCode AS varchar) IS NULL OR o.order_code LIKE '%' || CAST(:orderCode AS varchar) || '%') " +
+            "AND (CAST(:status AS varchar) IS NULL OR o.status = CAST(:status AS varchar)) " +
+            "AND (CAST(:customerName AS varchar) IS NULL OR o.customer_name LIKE '%' || CAST(:customerName AS varchar) || '%') " +
+            "AND (CAST(:customerPhone AS varchar) IS NULL OR o.customer_phone LIKE '%' || CAST(:customerPhone AS varchar) || '%') " +
+            "AND (CAST(:fromDate AS timestamp) IS NULL OR o.created_at >= CAST(:fromDate AS timestamp)) " +
+            "AND (CAST(:toDate AS timestamp) IS NULL OR o.created_at <= CAST(:toDate AS timestamp))",
+            nativeQuery = true)
     Page<Order> filterOrders(@Param("orderCode") String orderCode,
-                             @Param("status") OrderStatus status,
+                             @Param("status") String status,
                              @Param("customerName") String customerName,
                              @Param("customerPhone") String customerPhone,
-                             @Param("fromDate") LocalDateTime fromDate,
-                             @Param("toDate") LocalDateTime toDate,
+                             @Param("fromDate") String fromDate,
+                             @Param("toDate") String toDate,
                              Pageable pageable);
 }

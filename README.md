@@ -17,10 +17,15 @@ Not implemented yet:
 - Session cart
 - Order controller/service/repository
 
-Default accounts:
-- admin@gmail.com / admin
-- staff@gmail.com / staff
-- customer@gmail.com / customer
+## Tài khoản kiểm thử (Testing Accounts)
 
-Swagger with current context path:
-- http://localhost:8080/teddy-shop/swagger-ui.html
+Dưới đây là danh sách tài khoản dùng để kiểm thử ứng dụng theo từng vai trò (Role):
+
+| Vai trò (Role) | Email | Mật khẩu (Password) | Quyền hạn |
+| --- | --- | --- | --- |
+| **Admin** | `admin@gmail.com` | `admin` | Full Access (Dashboard, Category, Product, Order, Staff) |
+| **Staff** | `staff@gmail.com` | `staff` | Order Management Only |
+| **Customer** | `customer@gmail.com` | `customer` | Client Front-store (Cart, Checkout, Order History) |
+
+Swagger API Documentation:
+- http://localhost:8080/teddy-bear-shop/swagger-ui/index.html (Context Path: `/teddy-bear-shop`)

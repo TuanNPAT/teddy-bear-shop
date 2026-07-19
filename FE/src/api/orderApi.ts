@@ -16,6 +16,7 @@ export interface OrderRequest {
 
 export interface OrderResponse {
   orderId: number;
+  orderCode: string;
   customerName: string;
   customerPhone: string;
   shippingAddress: string;
@@ -24,6 +25,7 @@ export interface OrderResponse {
   paymentMethod: string;
   createdAt: string;
   orderDetails: Array<Record<string, unknown>>;
+  cancelReason?: string | null;
 }
 
 export const orderApi = {
@@ -42,5 +44,32 @@ export const orderApi = {
       params: { reason }
     });
     return res.data;
+  },
+
+  getOrders: async (params?: Record<string, any>) => {
+    const cleanedParams: Record<string, any> = {};
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          cleanedParams[key] = value;
+        }
+      });
+    }
+    const res = await api.get<{ result: { content: OrderResponse[]; totalPages: number } }>('/orders', {
+      params: cleanedParams
+    });
+    return res.data.result;
+  },
+
+  getOrderById: async (orderId: number) => {
+    const res = await api.get<{ result: OrderResponse }>(`/orders/${orderId}`);
+    return res.data.result;
+  },
+
+  updateOrderStatus: async (orderId: number, status: string) => {
+    const res = await api.patch<{ result: OrderResponse }>(`/orders/${orderId}/status`, null, {
+      params: { status }
+    });
+    return res.data.result;
   }
 };

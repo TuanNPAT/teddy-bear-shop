@@ -10,6 +10,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 
+import { cmsMockApi } from '../api/cmsMockApi';
+
 const loginSchema = z.object({
   email: z.string().email({ message: 'Email không hợp lệ' }),
   password: z.string().min(1, { message: 'Vui lòng nhập mật khẩu' }),
@@ -28,9 +30,23 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const authResponse = await authService.login(data);
+      
+      if (authResponse.role === 'STAFF' && !cmsMockApi.isStaffActive(authResponse.email)) {
+        toast.error('Tài khoản của bạn đã bị khóa bởi Quản trị viên!');
+        setIsLoading(false);
+        return;
+      }
+      
       setAuth(authResponse);
       toast.success('Đăng nhập thành công');
-      navigate('/');
+      
+      if (authResponse.role === 'ADMIN') {
+        navigate('/admin');
+      } else if (authResponse.role === 'STAFF') {
+        navigate('/admin/orders');
+      } else {
+        navigate('/');
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại.');
