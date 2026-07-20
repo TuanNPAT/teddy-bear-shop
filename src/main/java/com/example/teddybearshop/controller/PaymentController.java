@@ -12,6 +12,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.util.UriComponentsBuilder;
+
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
@@ -33,10 +36,17 @@ public class PaymentController {
 
     @GetMapping("/vnpay-return")
     @Operation(summary = "VNPay callback sau khi thanh toán")
-    public ApiResponse<PaymentResultResponse> vnpayReturn(HttpServletRequest request) {
-        return ApiResponse.<PaymentResultResponse>builder()
-                .result(paymentService.handleVNPayReturn(request))
-                .build();
+    public RedirectView vnpayReturn(HttpServletRequest request) {
+        PaymentResultResponse result = paymentService.handleVNPayReturn(request);
+
+        String redirectUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/payment/vnpay-return")
+                .queryParam("orderCode", result.getOrderCode() != null ? result.getOrderCode() : "")
+                .queryParam("paymentStatus", result.getPaymentStatus() != null ? result.getPaymentStatus().name() : "")
+                .queryParam("message", result.getMessage() != null ? result.getMessage() : "")
+                .queryParam("transactionNo", result.getTransactionNo() != null ? result.getTransactionNo() : "")
+                .toUriString();
+
+        return new RedirectView(redirectUrl);
     }
 
     @GetMapping("/order/{orderId}")

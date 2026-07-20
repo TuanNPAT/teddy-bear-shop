@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import type { OrderResponse } from '../../api/orderApi';
+import { paymentApi, type PaymentResponse } from '../../api/paymentApi';
 import ProductImageFallback from '../product/ProductImageFallback';
+import { Loader2 } from 'lucide-react';
 
 interface OrderDetailModalProps {
   order: OrderResponse | null;
@@ -13,6 +15,21 @@ interface OrderDetailModalProps {
 
 export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalProps) {
   const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
+  const [paymentInfo, setPaymentInfo] = useState<PaymentResponse | null>(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && order && order.paymentMethod === 'VNPAY') {
+      setLoadingPayment(true);
+      paymentApi
+        .getPaymentByOrderId(order.orderId)
+        .then((res) => setPaymentInfo(res))
+        .catch(() => setPaymentInfo(null))
+        .finally(() => setLoadingPayment(false));
+    } else {
+      setPaymentInfo(null);
+    }
+  }, [isOpen, order]);
 
   if (!order) return null;
 
@@ -22,6 +39,8 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
     switch (status) {
       case 'PENDING': 
         return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 rounded-full px-3 py-1 font-bold text-xs border-transparent">Chờ xác nhận</Badge>;
+      case 'PAID': 
+        return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 rounded-full px-3 py-1 font-bold text-xs border-transparent">Đã thanh toán VNPay</Badge>;
       case 'CONFIRMED': 
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100 rounded-full px-3 py-1 font-bold text-xs border-transparent">Đã xác nhận</Badge>;
       case 'SHIPPED': 
@@ -77,16 +96,54 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
                   <span className="text-muted-foreground font-normal">Phương thức:</span>{' '}
                   {order.paymentMethod === 'COD' ? 'Thanh toán khi nhận hàng (COD)' : 'Thanh toán qua VNPay'}
                 </p>
-                <p>
-                  <span className="text-muted-foreground font-normal">Trạng thái thanh toán:</span>{' '}
-                  {order.status === 'DELIVERED' ? (
-                    <span className="text-emerald-600 font-bold">Đã thanh toán</span>
-                  ) : order.status === 'CANCELLED' ? (
-                    <span className="text-red-600 font-bold">Đã hủy đơn</span>
-                  ) : (
-                    <span className="text-amber-600 font-bold">Chờ thanh toán</span>
-                  )}
-                </p>
+                {loadingPayment ? (
+                  <div className="flex items-center gap-2 text-muted-foreground py-1">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span>Đang tải thông tin thanh toán VNPay...</span>
+                  </div>
+                ) : paymentInfo ? (
+                  <>
+                    <p>
+                      <span className="text-muted-foreground font-normal">Trạng thái VNPay:</span>{' '}
+                      {paymentInfo.status === 'SUCCESS' ? (
+                        <span className="text-emerald-600 font-bold">ĐÃ THANH TOÁN (SUCCESS)</span>
+                      ) : paymentInfo.status === 'FAILED' ? (
+                        <span className="text-red-600 font-bold">THẤT BẠI (FAILED)</span>
+                      ) : (
+                        <span className="text-amber-600 font-bold">CHỜ THANH TOÁN (PENDING)</span>
+                      )}
+                    </p>
+                    {paymentInfo.txnRef && (
+                      <p>
+                        <span className="text-muted-foreground font-normal">Mã tham chiếu (TxnRef):</span>{' '}
+                        <span className="font-mono text-xs font-bold">{paymentInfo.txnRef}</span>
+                      </p>
+                    )}
+                    {paymentInfo.transactionNo && (
+                      <p>
+                        <span className="text-muted-foreground font-normal">Mã giao dịch VNPay:</span>{' '}
+                        <span className="font-mono text-xs font-bold">{paymentInfo.transactionNo}</span>
+                      </p>
+                    )}
+                    {paymentInfo.paidAt && (
+                      <p>
+                        <span className="text-muted-foreground font-normal">Thời gian thanh toán:</span>{' '}
+                        <span className="font-bold">{new Date(paymentInfo.paidAt).toLocaleString('vi-VN')}</span>
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p>
+                    <span className="text-muted-foreground font-normal">Trạng thái thanh toán:</span>{' '}
+                    {order.status === 'PAID' || order.status === 'DELIVERED' ? (
+                      <span className="text-emerald-600 font-bold">Đã thanh toán</span>
+                    ) : order.status === 'CANCELLED' ? (
+                      <span className="text-red-600 font-bold">Đã hủy đơn</span>
+                    ) : (
+                      <span className="text-amber-600 font-bold">Chờ thanh toán</span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           </div>

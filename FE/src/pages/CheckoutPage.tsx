@@ -7,10 +7,12 @@ import { useCartStore } from '../stores/useCartStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { userApi } from '../api/userApi';
 import { orderApi } from '../api/orderApi';
+import { paymentApi } from '../api/paymentApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
+import { Loader2, ExternalLink, RefreshCw, XCircle } from 'lucide-react';
 import ProductImageFallback from '../components/product/ProductImageFallback';
 import { phoneSchema } from '../lib/validators';
 
@@ -30,6 +32,15 @@ export default function CheckoutPage() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
 
+  // VNPay polling state
+  const [vnpayPendingOrder, setVnpayPendingOrder] = useState<{
+    orderId: number;
+    orderCode: string;
+    paymentUrl: string;
+    popupRef?: Window | null;
+  } | null>(null);
+  const [pollingStatus, setPollingStatus] = useState<'POLLING' | 'SUCCESS' | 'FAILED'>('POLLING');
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -44,7 +55,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (items.length === 0) {
+    if (items.length === 0 && !vnpayPendingOrder) {
       navigate('/cart');
       return;
     }
@@ -66,12 +77,53 @@ export default function CheckoutPage() {
     };
 
     fetchProfile();
-  }, [isAuthenticated, navigate, reset, items.length]);
+  }, [isAuthenticated, navigate, reset, items.length, vnpayPendingOrder]);
+
+  /*
+  // Polling mechanism disabled in favor of direct Backend 302 redirect to FE
+  useEffect(() => {
+    if (!vnpayPendingOrder || pollingStatus !== 'POLLING') return;
+
+    let attempts = 0;
+
+    const pollPaymentStatus = async () => {
+      attempts++;
+      try {
+        const [paymentRes, orderRes] = await Promise.all([
+          paymentApi.getPaymentByOrderId(vnpayPendingOrder.orderId).catch(() => null),
+          orderApi.getOrderById(vnpayPendingOrder.orderId).catch(() => null),
+        ]);
+
+        const isPaymentSuccess = paymentRes?.status === 'SUCCESS' || orderRes?.status === 'PAID';
+        const isPaymentFailed = paymentRes?.status === 'FAILED' || orderRes?.status === 'CANCELLED';
+
+        if (isPaymentSuccess) {
+          vnpayPendingOrder.popupRef?.close();
+          setPollingStatus('SUCCESS');
+          clearCart();
+          toast.success('Thanh toán VNPay thành công!');
+          navigate('/thank-you', { state: { orderId: vnpayPendingOrder.orderId } });
+        } else if (isPaymentFailed) {
+          vnpayPendingOrder.popupRef?.close();
+          setPollingStatus('FAILED');
+          toast.error('Thanh toán VNPay không thành công hoặc bị hủy');
+        }
+      } catch {
+        // Continue polling if payment record not created yet or network glitch
+      }
+    };
+
+    const pollIntervalMs = attempts < 150 ? 400 : 2000;
+    const interval = setInterval(pollPaymentStatus, pollIntervalMs);
+    return () => clearInterval(interval);
+  }, [vnpayPendingOrder, pollingStatus, clearCart, navigate]);
+  */
 
   const formatPrice = (price: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
   const onSubmit = async (data: z.infer<typeof checkoutSchema>) => {
     setIsSubmitting(true);
+
     try {
       const orderData = {
         ...data,
@@ -79,9 +131,21 @@ export default function CheckoutPage() {
       };
       
       const order = await orderApi.createOrder(orderData);
-      clearCart();
-      toast.success(`Đặt hàng thành công! Mã đơn: #${order.orderId}`);
-      navigate('/thank-you', { state: { orderId: order.orderId } });
+
+      if (data.paymentMethod === 'VNPAY') {
+        const paymentRes = await paymentApi.createPayment(order.orderId);
+        if (paymentRes.paymentUrl) {
+          toast.info('Đang chuyển hướng sang cổng thanh toán VNPay...');
+          window.location.href = paymentRes.paymentUrl;
+        } else {
+          toast.error('Không thể lấy liên kết thanh toán VNPay');
+        }
+      } else {
+        // COD flow
+        clearCart();
+        toast.success(`Đặt hàng thành công! Mã đơn: #${order.orderId}`);
+        navigate('/thank-you', { state: { orderId: order.orderId } });
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi đặt hàng');
@@ -198,13 +262,97 @@ export default function CheckoutPage() {
               type="submit" 
               form="checkout-form" 
               className="w-full rounded-xl h-14 text-lg font-bold shadow-sm hover:shadow-md transition-all" 
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!vnpayPendingOrder}
             >
               {isSubmitting ? 'Đang xử lý...' : 'Hoàn tất đặt hàng'}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* VNPay Pending Payment Modal */}
+      {vnpayPendingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-card p-8 rounded-[2rem] border border-border shadow-2xl space-y-6 text-center animate-in zoom-in-95 duration-200">
+            {pollingStatus === 'POLLING' && (
+              <>
+                <div className="flex justify-center">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <Loader2 className="h-9 w-9 animate-spin" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-foreground tracking-tight">Đang chờ thanh toán VNPay...</h3>
+                  <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                    Trang thanh toán VNPay đã được mở ở cửa sổ mới. Vui lòng hoàn tất thanh toán trên VNPay.
+                  </p>
+                  <p className="text-xs font-mono text-primary font-bold pt-1">
+                    Mã đơn hàng: #{vnpayPendingOrder.orderCode}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 pt-2">
+                  <Button
+                    onClick={() => window.open(vnpayPendingOrder.paymentUrl, '_blank')}
+                    variant="outline"
+                    className="rounded-xl h-12 font-bold border-primary/30 text-primary hover:bg-primary/10"
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Mở lại trang thanh toán VNPay
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setVnpayPendingOrder(null);
+                      setPollingStatus('POLLING');
+                    }}
+                    className="rounded-xl h-11 text-muted-foreground hover:text-foreground"
+                  >
+                    Đóng lại & Chọn lại
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {pollingStatus === 'FAILED' && (
+              <>
+                <div className="flex justify-center">
+                  <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
+                    <XCircle className="h-9 w-9" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-foreground tracking-tight">Thanh toán Không thành công</h3>
+                  <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                    Giao dịch VNPay cho đơn hàng #{vnpayPendingOrder.orderCode} đã bị hủy hoặc không thể hoàn tất.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-3 pt-2">
+                  <Button
+                    onClick={() => {
+                      window.open(vnpayPendingOrder.paymentUrl, '_blank');
+                      setPollingStatus('POLLING');
+                    }}
+                    className="rounded-xl h-12 px-6 font-bold"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Thử thanh toán lại
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setVnpayPendingOrder(null);
+                      setPollingStatus('POLLING');
+                    }}
+                    className="rounded-xl h-12 px-6 font-bold"
+                  >
+                    Đóng
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import RegisterPage from '../pages/RegisterPage';
 import ProfilePage from '../pages/ProfilePage';
 import CheckoutPage from '../pages/CheckoutPage';
 import ThankYouPage from '../pages/ThankYouPage';
+import VNPayReturnPage from '../pages/VNPayReturnPage';
 import OrderHistoryPage from '../pages/OrderHistoryPage';
 import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
@@ -45,6 +46,7 @@ export default function AppRouter() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="checkout" element={<CheckoutPage />} />
           <Route path="thank-you" element={<ThankYouPage />} />
+          <Route path="payment/vnpay-return" element={<VNPayReturnPage />} />
           <Route path="orders" element={<OrderHistoryPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
