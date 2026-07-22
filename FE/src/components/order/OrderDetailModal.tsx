@@ -6,14 +6,16 @@ import type { OrderResponse } from '../../api/orderApi';
 import { paymentApi, type PaymentResponse } from '../../api/paymentApi';
 import ProductImageFallback from '../product/ProductImageFallback';
 import { Loader2 } from 'lucide-react';
+import { Button } from '../ui/button';
 
 interface OrderDetailModalProps {
   order: OrderResponse | null;
   isOpen: boolean;
   onClose: () => void;
+  onCancelOrder?: (orderId: number) => void;
 }
 
-export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalProps) {
+export default function OrderDetailModal({ order, isOpen, onClose, onCancelOrder }: OrderDetailModalProps) {
   const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
   const [paymentInfo, setPaymentInfo] = useState<PaymentResponse | null>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
@@ -210,6 +212,28 @@ export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetail
                 <span className="text-3xl font-extrabold text-primary">{formatPrice(order.totalAmount)}</span>
               </div>
             </div>
+          </div>
+
+          {/* Action Buttons Footer */}
+          <div className="flex justify-between items-center pt-5 border-t border-border/60 mt-4">
+            <div>
+              {order.status === 'PENDING' && onCancelOrder && (
+                <Button
+                  variant="destructive"
+                  className="rounded-xl font-bold px-6 h-11 shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  onClick={() => onCancelOrder(order.orderId)}
+                >
+                  Hủy đơn hàng
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              className="rounded-xl font-bold px-6 h-11 transition-all duration-200 border-border hover:bg-muted"
+              onClick={onClose}
+            >
+              Đóng
+            </Button>
           </div>
         </div>
       </DialogContent>

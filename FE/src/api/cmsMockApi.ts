@@ -105,18 +105,42 @@ export const cmsMockApi = {
     const res = await api.get('/orders?size=1000');
     const orders = res.data.result.content || [];
 
-    // Filter Delivered orders for revenue calculations
-    const deliveredOrders = orders.filter((o: any) => o.status === 'DELIVERED');
+    // Filter revenue-generating orders (PAID, DELIVERED, COMPLETED, CONFIRMED, SHIPPED)
+    const revenueOrders = orders.filter((o: any) =>
+      ['DELIVERED', 'COMPLETED', 'PAID', 'CONFIRMED', 'SHIPPED'].includes(o.status)
+    );
 
     // Total Revenue
-    const totalRevenue = deliveredOrders.reduce((acc: number, o: any) => acc + o.totalAmount, 0);
+    const totalRevenue = revenueOrders.reduce((acc: number, o: any) => acc + (Number(o.totalAmount) || 0), 0);
 
-    // Group sales by day/month to calculate charting trends
+    const parseDateStr = (createdAt: any): string => {
+      if (!createdAt) return '';
+      if (Array.isArray(createdAt) && createdAt.length >= 3) {
+        const y = createdAt[0];
+        const m = String(createdAt[1]).padStart(2, '0');
+        const d = String(createdAt[2]).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+      if (typeof createdAt === 'string') {
+        return createdAt.substring(0, 10);
+      }
+      try {
+        const d = new Date(createdAt);
+        if (!isNaN(d.getTime())) {
+          return d.toISOString().substring(0, 10);
+        }
+      } catch {
+        // Ignore
+      }
+      return '';
+    };
+
+    // Group sales by YYYY-MM-DD
     const chartDataMap: Record<string, number> = {};
-    deliveredOrders.forEach((o: any) => {
-      const dateStr = o.createdAt ? o.createdAt.substring(0, 10) : '';
+    revenueOrders.forEach((o: any) => {
+      const dateStr = parseDateStr(o.createdAt);
       if (dateStr) {
-        chartDataMap[dateStr] = (chartDataMap[dateStr] || 0) + o.totalAmount;
+        chartDataMap[dateStr] = (chartDataMap[dateStr] || 0) + (Number(o.totalAmount) || 0);
       }
     });
 

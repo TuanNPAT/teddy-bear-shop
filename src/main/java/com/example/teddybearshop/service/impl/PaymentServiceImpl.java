@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -52,20 +53,29 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // 4. Kiểm tra đã có payment chưa
-        if (paymentRepository.findByOrder_OrderId(order.getOrderId()).isPresent()) {
-            throw new AppException(ErrorCode.PAYMENT_ALREADY_EXISTS);
+        Optional<Payment> existingPaymentOpt = paymentRepository.findByOrder_OrderId(order.getOrderId());
+        Payment payment;
+        if (existingPaymentOpt.isPresent()) {
+            payment = existingPaymentOpt.get();
+            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                throw new AppException(ErrorCode.PAYMENT_ALREADY_EXISTS);
+            }
+            // Nếu giao dịch cũ không thành công, đặt lại trạng thái PENDING và reset mã giao dịch VNPay
+            payment.setStatus(PaymentStatus.PENDING);
+            payment.setTransactionNo(null);
+            payment.setPaidAt(null);
+            paymentRepository.save(payment);
+        } else {
+            // 5. Tạo payment record mới
+            payment = Payment.builder()
+                    .order(order)
+                    .amount(order.getTotalAmount())
+                    .method(PaymentMethod.VNPAY)
+                    .status(PaymentStatus.PENDING)
+                    .txnRef(order.getOrderCode())
+                    .build();
+            paymentRepository.save(payment);
         }
-
-        // 5. Tạo payment record
-        Payment payment = Payment.builder()
-                .order(order)
-                .amount(order.getTotalAmount())
-                .method(PaymentMethod.VNPAY)
-                .status(PaymentStatus.PENDING)
-                .txnRef(order.getOrderCode())
-                .build();
-
-        paymentRepository.save(payment);
 
         // 6. Tạo URL thanh toán VNPay
         String ipAddress = vnPayUtil.getIpAddress(httpRequest);

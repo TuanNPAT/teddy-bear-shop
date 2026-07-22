@@ -205,7 +205,7 @@ export default function AdminOrders() {
     const COD_FLOW: Record<string, string[]> = {
       PENDING: ['CONFIRMED'],
       CONFIRMED: ['SHIPPING'],
-      SHIPPING: ['DELIVERED'],
+      SHIPPING: ['DELIVERED', 'DELIVERY_FAILED'],
       DELIVERED: ['COMPLETED'],
       // Terminal states — no forward transition
       COMPLETED: [],
@@ -217,7 +217,7 @@ export default function AdminOrders() {
       PENDING: ['PAID'],       // Normally PAID is set by VNPay callback automatically
       PAID: ['CONFIRMED'],
       CONFIRMED: ['SHIPPING'],
-      SHIPPING: ['DELIVERED'],
+      SHIPPING: ['DELIVERED', 'DELIVERY_FAILED'],
       DELIVERED: ['COMPLETED'],
       // Terminal states
       COMPLETED: [],
@@ -241,6 +241,7 @@ export default function AdminOrders() {
       case 'SHIPPING': return 'Bàn giao vận chuyển';
       case 'DELIVERED': return 'Hoàn thành giao hàng';
       case 'COMPLETED': return 'Đánh dấu hoàn thành';
+      case 'DELIVERY_FAILED': return 'Báo giao hàng thất bại';
       default: return translateStatus(status);
     }
   };

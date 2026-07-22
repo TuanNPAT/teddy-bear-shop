@@ -62,26 +62,41 @@ export default function AdminDashboard() {
   }
 
   // Aggregate trend charts data based on selected filter
+  // Aggregate trend charts data into continuous date ranges based on selected filter
   const getFilteredChartData = () => {
-    if (!stats || !stats.trendCharts) return [];
-    
-    // Default: last 7 days of daily records or aggregate by range
-    const data = [...stats.trendCharts];
-    if (timeRange === 'day') {
-      return data.slice(-7);
-    } else if (timeRange === 'week') {
-      // Group by weeks or simply mock 4 weeks
-      return data.slice(-14); // Last 14 days
-    } else {
-      // Last 30 days
-      return data.slice(-30);
+    if (!stats) return [];
+
+    const numDays = timeRange === 'day' ? 7 : timeRange === 'week' ? 14 : 30;
+    const map = new Map<string, number>();
+    (stats.trendCharts || []).forEach(item => {
+      map.set(item.date, item.revenue);
+    });
+
+    const result: { date: string; revenue: number }[] = [];
+    const now = new Date();
+
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      result.push({
+        date: dateStr,
+        revenue: map.get(dateStr) || 0,
+      });
     }
+
+    return result;
   };
 
   const chartData = getFilteredChartData();
+  const hasRevenueData = chartData.some(d => d.revenue > 0);
 
   // Helper for drawing SVG Chart coordinates
-  const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1000000);
+  const maxRevenue = Math.max(...chartData.map(d => d.revenue), 100000);
   const chartHeight = 180;
   const chartWidth = 500;
   const paddingLeft = 60;
@@ -90,7 +105,8 @@ export default function AdminDashboard() {
   const paddingBottom = 30;
 
   const points = chartData.map((d, index) => {
-    const x = paddingLeft + (index / Math.max(chartData.length - 1, 1)) * (chartWidth - paddingLeft - paddingRight);
+    const totalPoints = Math.max(chartData.length - 1, 1);
+    const x = paddingLeft + (index / totalPoints) * (chartWidth - paddingLeft - paddingRight);
     const y = chartHeight - paddingBottom - (d.revenue / maxRevenue) * (chartHeight - paddingTop - paddingBottom);
     return { x, y, date: d.date, revenue: d.revenue };
   });
@@ -183,17 +199,20 @@ export default function AdminDashboard() {
         <div className="bg-card p-6 rounded-[1.5rem] border border-border shadow-sm lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between border-b border-border/50 pb-4">
             <h3 className="text-lg font-bold text-foreground">Xu hướng doanh thu</h3>
-            <span className="text-xs font-semibold text-muted-foreground">
-              Đơn vị: VND
-            </span>
+            <div className="flex items-center gap-2">
+              {!hasRevenueData && (
+                <span className="text-xs font-medium text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                  Chưa có doanh thu trong khoảng thời gian này
+                </span>
+              )}
+              <span className="text-xs font-semibold text-muted-foreground">
+                Đơn vị: VND
+              </span>
+            </div>
           </div>
 
           <div className="relative h-[220px] w-full">
-            {chartData.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-muted-foreground bg-muted/20 rounded-xl">
-                Chưa có đơn hàng hoàn thành để vẽ biểu đồ
-              </div>
-            ) : (
+            {chartData.length > 0 && (
               <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full overflow-visible">
                 <defs>
                   <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
