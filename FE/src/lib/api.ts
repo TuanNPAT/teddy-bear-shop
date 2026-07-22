@@ -1,12 +1,14 @@
 import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/teddy-bear-shop/api';
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/teddy-bear-shop/api/v1',
+  baseURL: `${apiBase}/v1`,
 });
 
 export const authApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/teddy-bear-shop/api',
+  baseURL: apiBase,
 });
 
 const authInterceptor = (config: InternalAxiosRequestConfig) => {
