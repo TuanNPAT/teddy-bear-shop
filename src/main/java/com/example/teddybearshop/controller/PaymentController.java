@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.web.servlet.view.RedirectView;
@@ -22,6 +23,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class PaymentController {
 
     private final PaymentService paymentService;
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     @PostMapping("/create")
     @Operation(summary = "Tạo thanh toán VNPay")
@@ -39,7 +43,7 @@ public class PaymentController {
     public RedirectView vnpayReturn(HttpServletRequest request) {
         PaymentResultResponse result = paymentService.handleVNPayReturn(request);
 
-        String redirectUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/payment/vnpay-return")
+        String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/payment/vnpay-return")
                 .queryParam("orderCode", result.getOrderCode() != null ? result.getOrderCode() : "")
                 .queryParam("paymentStatus", result.getPaymentStatus() != null ? result.getPaymentStatus().name() : "")
                 .queryParam("message", result.getMessage() != null ? result.getMessage() : "")
