@@ -43,8 +43,19 @@ export default function AdminCategories() {
 
   const handleDeleteClick = async (cat: CategoryMock) => {
     try {
-      // Check if there are active products belonging to this category in backend
-      const res = await api.get(`/products?size=1000`);
+      // TODO: Workaround tạm thời cho lỗi bytea khi param null - cần xóa khi Backend fix triệt để
+      const res = await api.get('/products', {
+        params: {
+          size: 1000,
+          name: '',
+          category: '',
+          minPrice: 0,
+          maxPrice: 5000000000000,
+          page: 0,
+          sortBy: 'createdAt',
+          sortDirection: 'desc'
+        }
+      });
       const products = res.data.result.content || [];
       const count = products.filter((p: any) => p.category === cat.id).length;
 

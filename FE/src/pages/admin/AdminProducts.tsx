@@ -63,13 +63,17 @@ export default function AdminProducts() {
         setProducts(list);
         setTotalPages(1);
       } else {
-        // Fetch normal products with filtering
+        // TODO: Workaround tạm thời cho lỗi bytea khi param null - cần xóa khi Backend fix triệt để
         const params: Record<string, any> = {
           page: currentPage,
           size: pageSize,
+          name: searchTerm.trim() || '',
+          category: categoryFilter || '',
+          minPrice: 0,
+          maxPrice: 5000000000000,
+          sortBy: 'createdAt',
+          sortDirection: 'desc'
         };
-        if (searchTerm.trim()) params.name = searchTerm.trim();
-        if (categoryFilter) params.category = categoryFilter;
 
         const res = await api.get('/products', { params });
         const data = res.data.result;
