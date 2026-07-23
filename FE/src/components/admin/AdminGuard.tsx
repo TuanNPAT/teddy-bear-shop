@@ -13,14 +13,16 @@ export default function AdminGuard({ children, allowedRoles }: AdminGuardProps) 
   const { token, user, logout } = useAuthStore();
   const location = useLocation();
 
-  // Check if staff is deactivated
-  if (user && user.role === 'STAFF' && !cmsMockApi.isStaffActive(user.email)) {
-    // Force logout
-    useEffect(() => {
+  const isStaffDeactivated = !!(user && user.role === 'STAFF' && !cmsMockApi.isStaffActive(user.email));
+
+  useEffect(() => {
+    if (isStaffDeactivated) {
       logout();
       toast.error('Tài khoản của bạn đã bị khóa bởi Quản trị viên!');
-    }, [logout]);
-    
+    }
+  }, [isStaffDeactivated, logout]);
+
+  if (isStaffDeactivated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
